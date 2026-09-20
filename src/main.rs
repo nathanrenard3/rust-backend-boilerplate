@@ -5,9 +5,10 @@ const SESSION_CLEANUP_INTERVAL: std::time::Duration = std::time::Duration::from_
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt::init();
-
     let config = Config::from_env()?;
+    tracing_subscriber::fmt()
+        .with_env_filter(config.log_filter)
+        .init();
     let mut options = ConnectOptions::new(config.database.url);
     // Keep queries and sensitive parameters out of SQL logs.
     // SeaORM applies this timeout to acquiring a connection from the pool.

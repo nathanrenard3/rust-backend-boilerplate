@@ -5,6 +5,7 @@ mod extractors;
 mod health;
 mod middleware;
 mod routes;
+mod telemetry;
 mod users;
 
 use axum::Router;

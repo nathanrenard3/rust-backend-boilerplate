@@ -27,6 +27,7 @@ pub(crate) async fn router_with_routes(
     let cors = CorsLayer::new()
         .allow_origin(config.allowed_origin.clone())
         .allow_credentials(true)
+        .expose_headers([HeaderName::from_static("x-request-id")])
         .allow_methods([
             Method::GET,
             Method::POST,
@@ -46,5 +47,6 @@ pub(crate) async fn router_with_routes(
         .layer(axum::middleware::from_fn(
             crate::middleware::normalize_errors,
         ))
+        .layer(axum::middleware::from_fn(crate::telemetry::log_request))
         .with_state(db))
 }

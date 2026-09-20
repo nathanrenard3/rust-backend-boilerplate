@@ -9,6 +9,7 @@ const MAX_CONNECT_TIMEOUT_SECONDS: u64 = 300;
 const MAX_CONNECTIONS: u64 = 1000;
 
 pub struct Config {
+    pub log_filter: tracing_subscriber::EnvFilter,
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
@@ -56,6 +57,10 @@ impl Config {
                 .ok_or_else(|| invalid(name, "set to a valid PostgreSQL URL")),
             Err(VarError::NotUnicode(_)) => Err(invalid(name, "valid Unicode")),
         };
+        let log_filter = tracing_subscriber::EnvFilter::builder()
+            .with_regex(false)
+            .parse(read("RUST_LOG", Some("info"))?)
+            .map_err(|_| invalid("RUST_LOG", "a valid tracing filter"))?;
         let address = read("SERVER_ADDR", Some("0.0.0.0:8000"))?
             .parse::<SocketAddr>()
             .ok()
@@ -94,6 +99,7 @@ impl Config {
         )?
         .with_session_ttl_seconds(ttl)?;
         Ok(Self {
+            log_filter,
             server: ServerConfig { address },
             database: DatabaseConfig {
                 url,
@@ -262,6 +268,7 @@ mod tests {
     #[test]
     fn non_unicode_never_uses_defaults() {
         for name in [
+            "RUST_LOG",
             "DATABASE_URL",
             "SERVER_ADDR",
             "DATABASE_MAX_CONNECTIONS",
@@ -284,6 +291,28 @@ mod tests {
             assert_eq!(error.variable, name);
             assert!(!error.to_string().contains("private-value"));
         }
+    }
+
+    #[test]
+    fn log_filter_is_validated() {
+        let valid = parse(&[
+            ("DATABASE_URL", "postgres://localhost/test"),
+            ("RUST_LOG", "warn,rust_backend_boilerplate=debug"),
+        ])
+        .unwrap();
+        assert!(
+            valid
+                .log_filter
+                .to_string()
+                .contains("rust_backend_boilerplate=debug")
+        );
+        let error = parse(&[
+            ("DATABASE_URL", "postgres://localhost/test"),
+            ("RUST_LOG", "crate=invalid-level"),
+        ])
+        .err()
+        .unwrap();
+        assert_eq!(error.variable, "RUST_LOG");
     }
 
     #[test]
