@@ -1,0 +1,2 @@
+- All code must be written in English, including identifiers, comments, and documentation comments.
+- Commit messages must not include a `Co-authored-by` trailer.

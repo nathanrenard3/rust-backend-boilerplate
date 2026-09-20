@@ -24,6 +24,8 @@ services:
     environment:
       # Containers reach PostgreSQL through the db service.
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:

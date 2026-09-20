@@ -14,7 +14,6 @@ docker compose up --build -d
 
 - Database health: `curl -i http://localhost:8000/health` (HTTP 200 when PostgreSQL
   responds, HTTP 503 otherwise).
-- Auth placeholder: `curl -i http://localhost:8000/auth` (HTTP 200 with body `ok`).
 - PostgreSQL from your machine: `localhost:5432`, using the credentials in `.env`.
 
 Set the host ports with `API_PORT` and `POSTGRES_PORT` in `.env`.
@@ -33,13 +32,12 @@ update users in an existing database.
 
 After changing the Rust code, run `docker compose up --build -d` again.
 
-## Source layout
+## Authentication
 
-- `src/main.rs`: initializes the database pool and starts the HTTP server.
-- `src/routes.rs`: maps URLs to handlers and shares the database pool.
-- `src/settings.rs`: general endpoints (`/` and `/health`).
-- `src/auth.rs`: authentication module, currently a placeholder endpoint.
-
-Handlers that need the database receive the shared pool through
-`State<DatabaseConnection>`, as shown in `settings::health`. They do not call
-`Database::connect` again.
+Authentication uses `axum-login` with Argon2id password hashing and cookie sessions
+stored in PostgreSQL. Register with `POST /auth/register`, log in with
+`POST /auth/login`, retrieve the current user with `GET /auth/me`, and log out
+with `POST /auth/logout`. Registration and login accept JSON containing `email`
+and `password`; all POST requests require the `X-CSRF-Protection: 1` header.
+Clients must retain and send the session cookie. Set `FRONTEND_ORIGIN` for your
+browser client and enable `COOKIE_SECURE=true` when serving the API over HTTPS.
