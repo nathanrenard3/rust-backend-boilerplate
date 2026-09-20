@@ -8,8 +8,12 @@ pub async fn index() -> &'static str {
 pub async fn health(State(db): State<DatabaseConnection>) -> StatusCode {
     match db.ping().await {
         Ok(()) => StatusCode::OK,
-        Err(error) => {
-            tracing::error!(%error, "PostgreSQL unavailable");
+        Err(_) => {
+            tracing::error!(
+                operation = "health_check",
+                category = "database",
+                "PostgreSQL unavailable"
+            );
             StatusCode::SERVICE_UNAVAILABLE
         }
     }

@@ -1,6 +1,9 @@
 mod auth;
 pub mod config;
+mod error;
+mod extractors;
 mod health;
+mod middleware;
 mod routes;
 mod users;
 

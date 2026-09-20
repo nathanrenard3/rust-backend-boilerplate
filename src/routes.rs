@@ -43,5 +43,8 @@ pub(crate) async fn router_with_routes(
         .route("/health", get(health::health))
         .merge(auth::application_routes(db.clone(), config, features).await?)
         .layer(cors)
+        .layer(axum::middleware::from_fn(
+            crate::middleware::normalize_errors,
+        ))
         .with_state(db))
 }

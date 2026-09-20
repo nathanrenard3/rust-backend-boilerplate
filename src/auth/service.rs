@@ -31,9 +31,10 @@ impl AuthService {
     pub async fn register(&self, credentials: Credentials) -> Result<user::Model, AuthError> {
         let credentials = credentials.normalize()?;
         if credentials.password.chars().count() < 15 {
-            return Err(AuthError::InvalidInput(
-                "Password must contain at least 15 characters",
-            ));
+            return Err(AuthError::InvalidInput {
+                field: "password",
+                message: "Password must contain at least 15 characters",
+            });
         }
         let permit = self
             .password_slots

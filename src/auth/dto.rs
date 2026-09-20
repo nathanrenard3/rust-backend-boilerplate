@@ -14,12 +14,16 @@ impl Credentials {
     pub fn normalize(mut self) -> Result<Self, AuthError> {
         self.email = self.email.trim().to_lowercase();
         if self.email.len() > 254 || !email_address::EmailAddress::is_valid(&self.email) {
-            return Err(AuthError::InvalidInput("Invalid email address"));
+            return Err(AuthError::InvalidInput {
+                field: "email",
+                message: "Invalid email address",
+            });
         }
         if self.password.is_empty() || self.password.len() > 1024 {
-            return Err(AuthError::InvalidInput(
-                "Password must contain 1 to 1024 bytes",
-            ));
+            return Err(AuthError::InvalidInput {
+                field: "password",
+                message: "Password must contain 1 to 1024 bytes",
+            });
         }
         Ok(self)
     }

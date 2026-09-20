@@ -4,6 +4,7 @@ use super::{
     error::AuthError,
     service::AuthService,
 };
+use crate::extractors::ApiJson;
 use axum::{Json, http::StatusCode};
 use tower_sessions::Expiry;
 
@@ -11,7 +12,7 @@ type AuthSession = axum_login::AuthSession<AuthService>;
 
 pub async fn register(
     auth: AuthSession,
-    Json(credentials): Json<Credentials>,
+    ApiJson(credentials): ApiJson<Credentials>,
 ) -> Result<(StatusCode, Json<UserResponse>), AuthError> {
     let user = auth.backend.register(credentials).await?;
     Ok((StatusCode::CREATED, Json(user.into())))
@@ -19,7 +20,7 @@ pub async fn register(
 
 pub async fn login(
     mut auth: AuthSession,
-    Json(credentials): Json<Credentials>,
+    ApiJson(credentials): ApiJson<Credentials>,
 ) -> Result<Json<UserResponse>, AuthError> {
     let user = auth
         .authenticate(credentials.normalize()?)

@@ -1,3 +1,5 @@
+#[path = "auth/errors.rs"]
+mod errors;
 mod support;
 
 use axum::{extract::ConnectInfo, http::StatusCode};
@@ -283,6 +285,10 @@ async fn login_limits_repeated_attempts_from_the_same_ip() {
         } else {
             StatusCode::TOO_MANY_REQUESTS
         };
-        app.send(req, expected).await;
+        let response = app.send(req, expected).await;
+        if expected == StatusCode::TOO_MANY_REQUESTS {
+            assert!(response.headers().contains_key("retry-after"));
+            assert_eq!(json_body(response).await["code"], "rate_limited");
+        }
     }
 }
