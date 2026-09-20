@@ -58,13 +58,14 @@ fn router() -> Router<DatabaseConnection> {
         .finish()
         .expect("valid rate limit");
     let limiter = governor.limiter().clone();
-    tokio::spawn(async move {
+    let cleanup = tokio::spawn(async move {
         let mut interval = tokio::time::interval(LIMITER_CLEANUP_INTERVAL);
         loop {
             interval.tick().await;
             limiter.retain_recent();
         }
     });
+    let cleanup = std::sync::Arc::new(LimiterCleanup(cleanup.abort_handle()));
     Router::new()
         .route("/register", post(endpoints::register))
         .route("/login", post(endpoints::login))
@@ -73,4 +74,14 @@ fn router() -> Router<DatabaseConnection> {
         .route("/me", get(endpoints::me))
         .route("/logout", post(endpoints::logout))
         .layer(DefaultBodyLimit::max(AUTH_BODY_LIMIT))
+        .layer(Extension(cleanup))
+}
+
+// The cleanup task must not outlive the router that owns the limiter.
+struct LimiterCleanup(tokio::task::AbortHandle);
+
+impl Drop for LimiterCleanup {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }

@@ -20,6 +20,7 @@ services:
 
   api:
     build: .
+    stop_grace_period: 30s
     restart: unless-stopped
     environment:
       # Containers reach PostgreSQL through the db service.

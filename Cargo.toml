@@ -18,7 +18,7 @@ sea-orm = { version = "2", features = ["sqlx-postgres", "runtime-tokio-rustls", 
 migration = { path = "migration" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
-tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "net", "sync", "time"] }
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "net", "sync", "time", "signal"] }
 tower-http = { version = "0.7.1", features = ["trace", "cors", "set-header"] }
 tower-sessions = { version = "0.14.0", default-features = false, features = ["axum-core"] }
 tower_governor = { version = "0.8", default-features = false, features = ["axum"] }
