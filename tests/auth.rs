@@ -3,7 +3,7 @@ mod errors;
 mod support;
 
 use axum::{extract::ConnectInfo, http::StatusCode};
-use rust_backend_boilerplate::{app, config::Config};
+use rust_backend_boilerplate::{app, config::AuthConfig};
 use sea_orm::{ConnectionTrait, DbBackend, Statement};
 use serde_json::{Value, json};
 use support::{PASSWORD, TestApp, cookie, json_body, me, request};
@@ -126,7 +126,7 @@ async fn login_issues_a_cookie_and_authenticates_me() {
 #[tokio::test]
 #[ignore = "requires TEST_DATABASE_URL"]
 async fn https_configuration_sets_secure_cookie() {
-    let app = TestApp::with_config(Config::new("https://example.com", true).unwrap()).await;
+    let app = TestApp::with_config(AuthConfig::new("https://example.com", true).unwrap()).await;
     app.register().await;
     let response = app.login().await;
     assert!(
@@ -151,7 +151,7 @@ async fn session_survives_application_restart() {
     let cookie = test.session().await;
     test.api = app(
         test.db.clone(),
-        Config::new("http://localhost:3000", false).unwrap(),
+        AuthConfig::new("http://localhost:3000", false).unwrap(),
     )
     .await
     .unwrap();
@@ -291,4 +291,37 @@ async fn login_limits_repeated_attempts_from_the_same_ip() {
             assert_eq!(json_body(response).await["code"], "rate_limited");
         }
     }
+}
+
+#[tokio::test]
+#[ignore = "requires TEST_DATABASE_URL"]
+async fn configured_ttl_sets_absolute_login_expiration() {
+    let ttl = 120;
+    let config = AuthConfig::new("http://localhost:3000", false)
+        .unwrap()
+        .with_session_ttl_seconds(ttl)
+        .unwrap();
+    let app = TestApp::with_config(config).await;
+    app.register().await;
+    let before = time::OffsetDateTime::now_utc().unix_timestamp();
+    let session_cookie = cookie(&app.login().await);
+    let after = time::OffsetDateTime::now_utc().unix_timestamp();
+    let id = session_cookie.split_once('=').unwrap().1;
+    let expiration = || async {
+        app.db
+            .query_one_raw(Statement::from_sql_and_values(
+                DbBackend::Postgres,
+                "SELECT expires_at FROM auth_sessions WHERE id = $1",
+                [id.into()],
+            ))
+            .await
+            .unwrap()
+            .unwrap()
+            .try_get::<i64>("", "expires_at")
+            .unwrap()
+    };
+    let expires_at = expiration().await;
+    assert!((before + ttl as i64..=after + ttl as i64).contains(&expires_at));
+    app.send(me(Some(&session_cookie)), StatusCode::OK).await;
+    assert_eq!(expiration().await, expires_at);
 }

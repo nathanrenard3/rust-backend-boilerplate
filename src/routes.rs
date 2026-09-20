@@ -9,18 +9,18 @@ use axum::{
 use sea_orm::DatabaseConnection;
 use tower_http::cors::CorsLayer;
 
-use crate::{auth, config::Config, health};
+use crate::{auth, config::AuthConfig, health};
 
 pub async fn router(
     db: DatabaseConnection,
-    config: Config,
+    config: AuthConfig,
 ) -> Result<Router, Box<dyn std::error::Error>> {
     router_with_routes(db, config, Router::new()).await
 }
 
 pub(crate) async fn router_with_routes(
     db: DatabaseConnection,
-    config: Config,
+    config: AuthConfig,
     features: Router<DatabaseConnection>,
 ) -> Result<Router, Box<dyn std::error::Error>> {
     // Allow credentialed browser requests only from the configured frontend origin.

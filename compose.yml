@@ -23,9 +23,13 @@ services:
     restart: unless-stopped
     environment:
       # Containers reach PostgreSQL through the db service.
+      SERVER_ADDR: 0.0.0.0:8000
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_MAX_CONNECTIONS: ${DATABASE_MAX_CONNECTIONS:-10}
+      DATABASE_CONNECT_TIMEOUT_SECONDS: ${DATABASE_CONNECT_TIMEOUT_SECONDS:-10}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-86400}
     ports:
       - "127.0.0.1:${API_PORT:-8000}:8000"
     depends_on:

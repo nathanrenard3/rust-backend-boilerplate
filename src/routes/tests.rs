@@ -32,7 +32,7 @@ async fn test_app() -> Router {
     migration::Migrator::up(&db, None).await.unwrap();
     router_with_routes(
         db,
-        Config::new("http://localhost:3000", false).unwrap(),
+        AuthConfig::new("http://localhost:3000", false).unwrap(),
         Router::new().route("/test-profile", get(protected).post(protected)),
     )
     .await

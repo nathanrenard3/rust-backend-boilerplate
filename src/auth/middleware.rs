@@ -6,10 +6,10 @@ use axum::{
 };
 
 use super::error::AuthError;
-use crate::config::Config;
+use crate::config::AuthConfig;
 
 pub(super) async fn protect_requests(
-    State(config): State<Config>,
+    State(config): State<AuthConfig>,
     request: Request,
     next: Next,
 ) -> Result<Response, AuthError> {

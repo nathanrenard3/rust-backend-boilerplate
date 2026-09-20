@@ -6,9 +6,9 @@ mod middleware;
 mod service;
 pub mod session;
 
-use crate::config::Config;
+use crate::config::AuthConfig;
 use axum::{
-    Router,
+    Extension, Router,
     extract::DefaultBodyLimit,
     http::{HeaderValue, header},
     middleware::from_fn_with_state,
@@ -22,9 +22,12 @@ use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_sessions::{Expiry, SessionManagerLayer, cookie::SameSite};
 
+const LIMITER_CLEANUP_INTERVAL: std::time::Duration = std::time::Duration::from_secs(60);
+const AUTH_BODY_LIMIT: usize = 16 * 1024;
+
 pub(crate) async fn application_routes(
     db: DatabaseConnection,
-    config: Config,
+    config: AuthConfig,
     routes: Router<DatabaseConnection>,
 ) -> Result<Router<DatabaseConnection>, AuthError> {
     let auth_service = service::AuthService::new(db.clone()).await?;
@@ -34,11 +37,12 @@ pub(crate) async fn application_routes(
         .with_http_only(true)
         .with_secure(config.cookie_secure)
         .with_same_site(SameSite::Lax)
-        .with_expiry(Expiry::OnInactivity(time::Duration::days(1)));
+        .with_expiry(Expiry::OnInactivity(config.session_ttl()));
     let auth_layer = AuthManagerLayerBuilder::new(auth_service, session_layer).build();
     Ok(routes
         .nest("/auth", router())
         .layer(auth_layer)
+        .layer(Extension(config.clone()))
         .layer(from_fn_with_state(config, middleware::protect_requests))
         .layer(SetResponseHeaderLayer::overriding(
             header::CACHE_CONTROL,
@@ -55,7 +59,7 @@ fn router() -> Router<DatabaseConnection> {
         .expect("valid rate limit");
     let limiter = governor.limiter().clone();
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+        let mut interval = tokio::time::interval(LIMITER_CLEANUP_INTERVAL);
         loop {
             interval.tick().await;
             limiter.retain_recent();
@@ -68,5 +72,5 @@ fn router() -> Router<DatabaseConnection> {
         .route_layer(GovernorLayer::new(governor))
         .route("/me", get(endpoints::me))
         .route("/logout", post(endpoints::logout))
-        .layer(DefaultBodyLimit::max(16 * 1024))
+        .layer(DefaultBodyLimit::max(AUTH_BODY_LIMIT))
 }

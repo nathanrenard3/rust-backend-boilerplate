@@ -4,8 +4,8 @@ use super::{
     error::AuthError,
     service::AuthService,
 };
-use crate::extractors::ApiJson;
-use axum::{Json, http::StatusCode};
+use crate::{config::AuthConfig, extractors::ApiJson};
+use axum::{Extension, Json, http::StatusCode};
 use tower_sessions::Expiry;
 
 type AuthSession = axum_login::AuthSession<AuthService>;
@@ -20,6 +20,7 @@ pub async fn register(
 
 pub async fn login(
     mut auth: AuthSession,
+    Extension(config): Extension<AuthConfig>,
     ApiJson(credentials): ApiJson<Credentials>,
 ) -> Result<Json<UserResponse>, AuthError> {
     let user = auth
@@ -35,7 +36,7 @@ pub async fn login(
         .await
         .map_err(|_| AuthError::Internal)?;
     auth.session.set_expiry(Some(Expiry::AtDateTime(
-        time::OffsetDateTime::now_utc() + time::Duration::days(1),
+        time::OffsetDateTime::now_utc() + config.session_ttl(),
     )));
     auth.login(&user).await.map_err(|_| AuthError::Internal)?;
     Ok(Json(user.into()))

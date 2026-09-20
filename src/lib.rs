@@ -13,7 +13,7 @@ use sea_orm::DatabaseConnection;
 
 pub async fn app(
     db: DatabaseConnection,
-    config: config::Config,
+    config: config::AuthConfig,
 ) -> Result<Router, Box<dyn std::error::Error>> {
     migration::Migrator::up(&db, None).await?;
     routes::router(db, config).await

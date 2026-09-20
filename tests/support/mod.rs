@@ -5,7 +5,7 @@ use axum::{
     http::{Request, StatusCode},
     response::Response,
 };
-use rust_backend_boilerplate::{app, config::Config};
+use rust_backend_boilerplate::{app, config::AuthConfig};
 use sea_orm::{
     ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement,
 };
@@ -27,10 +27,10 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        Self::with_config(Config::new("http://localhost:3000", false).unwrap()).await
+        Self::with_config(AuthConfig::new("http://localhost:3000", false).unwrap()).await
     }
 
-    pub async fn with_config(config: Config) -> Self {
+    pub async fn with_config(config: AuthConfig) -> Self {
         let url = std::env::var("TEST_DATABASE_URL").expect("set TEST_DATABASE_URL");
         let mut options = ConnectOptions::new(url);
         options.max_connections(2).sqlx_logging(false);

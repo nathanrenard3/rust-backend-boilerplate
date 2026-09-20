@@ -8,6 +8,8 @@ use std::sync::Arc;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+const PASSWORD_CONCURRENCY: usize = 4;
+
 #[derive(Clone)]
 pub struct AuthService {
     db: DatabaseConnection,
@@ -24,7 +26,7 @@ impl AuthService {
         Ok(Self {
             db,
             dummy_hash: Arc::new(dummy_hash),
-            password_slots: Arc::new(tokio::sync::Semaphore::new(4)),
+            password_slots: Arc::new(tokio::sync::Semaphore::new(PASSWORD_CONCURRENCY)),
         })
     }
 
