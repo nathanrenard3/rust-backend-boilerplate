@@ -1,4 +1,5 @@
 use super::{
+    CurrentUser,
     dto::{Credentials, UserResponse},
     error::AuthError,
     service::AuthService,
@@ -39,10 +40,8 @@ pub async fn login(
     Ok(Json(user.into()))
 }
 
-pub async fn me(auth: AuthSession) -> Result<Json<UserResponse>, AuthError> {
-    auth.user
-        .map(|user| Json(user.into()))
-        .ok_or(AuthError::Unauthorized)
+pub async fn me(CurrentUser(user): CurrentUser) -> Json<UserResponse> {
+    Json(user.into())
 }
 
 pub async fn logout(mut auth: AuthSession) -> Result<StatusCode, AuthError> {
