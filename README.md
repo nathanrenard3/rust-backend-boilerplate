@@ -41,3 +41,30 @@ with `POST /auth/logout`. Registration and login accept JSON containing `email`
 and `password`; all POST requests require the `X-CSRF-Protection: 1` header.
 Clients must retain and send the session cookie. Set `FRONTEND_ORIGIN` for your
 browser client and enable `COOKIE_SECURE=true` when serving the API over HTTPS.
+
+## Migrations
+
+Versioned SeaORM migrations live in `migration/`. The API applies pending migrations
+before starting; `seaql_migrations` records which ones have already run.
+The initial migrations also accept the unchanged tables from the previous
+schema-sync setup, preserving their data. They do not reconcile a modified schema.
+
+```sh
+docker compose exec api migrate status
+docker compose exec api migrate up
+```
+
+To create a migration locally, run this from the project root:
+
+```sh
+(cd migration && cargo run -- generate add_username_to_users)
+```
+
+Fill in its `up` (apply) and `down` (undo) methods, then update the corresponding
+entity in `src/`. Changing an entity alone no longer changes the database.
+Add new migrations instead of editing ones that have already been applied.
+Rebuild the API image to include them. For multiple API instances, run migrations
+once before starting the instances.
+
+`docker compose exec api migrate down -n 1` rolls back the last migration.
+The initial migrations drop their tables on rollback, including all stored data.

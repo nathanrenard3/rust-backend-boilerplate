@@ -5,18 +5,14 @@ mod routes;
 mod users;
 
 use axum::Router;
+use migration::MigratorTrait;
 use sea_orm::DatabaseConnection;
 
 pub async fn app(
     db: DatabaseConnection,
     config: config::Config,
 ) -> Result<Router, Box<dyn std::error::Error>> {
-    // Synchronize the schema from entities; this does not create a versioned migration history.
-    db.get_schema_builder()
-        .register(users::user::Entity)
-        .register(auth::session::model::Entity)
-        .sync(&db)
-        .await?;
+    migration::Migrator::up(&db, None).await?;
     routes::router(db, config).await
 }
 

@@ -135,11 +135,8 @@ mod tests {
         let db = sea_orm::Database::connect(std::env::var("TEST_DATABASE_URL").unwrap())
             .await
             .unwrap();
-        db.get_schema_builder()
-            .register(model::Entity)
-            .sync(&db)
-            .await
-            .unwrap();
+        use migration::MigratorTrait;
+        migration::Migrator::up(&db, None).await.unwrap();
         let store = SeaOrmSessionStore(db);
         let mut first = Record {
             id: Id::default(),
